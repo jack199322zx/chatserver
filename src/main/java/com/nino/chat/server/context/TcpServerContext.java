@@ -54,8 +54,9 @@ public class TcpServerContext implements ServerContext {
         }
     }
 
-    public void removeClient(String name) {
-        printWriterMap.remove(name);
+    public void removeClient(User user) {
+        printWriterMap.remove(user.getNickName());
+        userInfos.remove(user);
     }
 
     public void consoleCurrentUserNum() {
@@ -149,6 +150,12 @@ public class TcpServerContext implements ServerContext {
                             continue;
                         }
                     }
+                    if (str.equalsIgnoreCase("OVER")) {
+                        userLogout();
+                        Message message = new Message(userInfos, user.getNickName() + "下线了!", Message.MessageType.LOGOUT);
+                        publishMessage(message);
+                        return;
+                    }
                     // 遍历所有输出流，将该客户端发送的信息转发给所有客户端
                     System.out.println("公聊消息：" + str);
                     Message message = new Message(user, userInfos, str);
@@ -158,10 +165,6 @@ public class TcpServerContext implements ServerContext {
                 e.printStackTrace();
                 throw new ServerRuntimeException("处理用户发送消息发生错误");
             } finally {
-                removeClient(user.getNickName());
-                Message message = new Message(userInfos, user.getNickName() + "下线了!", Message.MessageType.LOGOUT);
-                publishMessage(message);
-                consoleCurrentUserNum();
                 if(socket!=null) {
                     try {
                         socket.close();
@@ -171,6 +174,11 @@ public class TcpServerContext implements ServerContext {
                 }
             }
 
+        }
+
+        private void userLogout() {
+            removeClient(user);
+            consoleCurrentUserNum();
         }
 
     }

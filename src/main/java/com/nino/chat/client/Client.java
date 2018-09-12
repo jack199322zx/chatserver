@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author ss
@@ -18,8 +19,8 @@ public class Client {
     private PrintWriter printWriter;
     private BufferedReader bufferedReader;
     private ExecutorService executorService;
+    private boolean stopFlag;
     private static Scanner scanner;
-    private static Random random = new Random();
 
     public Client(Socket socket) {
         this.socket = socket;
@@ -55,6 +56,21 @@ public class Client {
             String message = scanner.next();
             System.out.println("客户端发送消息：" + message);
             printWriter.println(message);
+            if ("OVER".equalsIgnoreCase(message)) {
+                logout();
+            }
+        }
+    }
+
+    private void logout() {
+        try {
+            stopFlag = true;
+            TimeUnit.SECONDS.sleep(1);
+            if (socket != null) {
+                socket.close();
+            }
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -64,12 +80,12 @@ public class Client {
         public void run() {
             try {
                 String message = null;
-                while ((message = bufferedReader.readLine()) != null) {
+                while (!stopFlag && (message = bufferedReader.readLine()) != null) {
                     int nickNameFlag, contentFlag;
                     if ((nickNameFlag = message.indexOf("@")) > -1 && (contentFlag = message.indexOf(":")) > -1) {
                         String fromName = message.substring(0, nickNameFlag);
                         System.out.println("收到来自" + fromName + "的消息：" + message.substring(contentFlag));
-                        return;
+                        continue;
                     }
                     System.out.println("收到服务端消息：" + message);
                 }
